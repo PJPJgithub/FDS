@@ -15,7 +15,7 @@ region_name = 'ap-northeast-2'    # 서울 리전
 
 # True: 화면에만 출력 (무료/테스트용)
 # False: 실제 AWS Kinesis로 전송 (유료/실전용)
-DRY_RUN = True 
+DRY_RUN = False
 # ==========================================
 
 def get_kinesis_client():
