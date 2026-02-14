@@ -1,3 +1,4 @@
+
 ```gitignore
 # ==========================
 # 1. 보안 관련 (절대 업로드 금지)
@@ -43,6 +44,7 @@ pip-delete-this-directory.txt
 *.tsv
 *.json
 *.log
+data/raw/
 
 # ==========================
 # 5. OS/IDE 설정 파일 (잡동사니)
