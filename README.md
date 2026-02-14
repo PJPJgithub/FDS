@@ -1,4 +1,4 @@
-# FSD
+# FDS
 
 # 🛡️ Real-time Financial Fraud Detection System on AWS EKS
 
@@ -68,14 +68,34 @@
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run (실행 가이드)
 
-### 1. Prerequisites
-*   AWS CLI & Terraform installed
-*   Docker & Kubectl installed
+이 프로젝트를 로컬 및 AWS 환경에서 실행하는 순서입니다.
 
-### 2. Infrastructure Setup
+### 1. Prerequisites (준비물)
+*   AWS CLI (Configure 설정 완료)
+*   Terraform, Docker, Kubectl, Python 3.9+
+
+### 2. Infrastructure Setup (AWS 리소스 생성)
+Terraform을 이용해 VPC, EKS, Kinesis, DynamoDB를 생성합니다.
 ```bash
 cd infra
 terraform init
-terraform apply  # VPC, EKS, Kinesis 등 리소스 생성
+terraform apply -auto-approve
+
+### 3. Deploy Application to EKS (앱 배포)
+팀원이 개발한 이상 탐지 모델을 Docker로 빌드하여 EKS에 배포합니다.
+# 1. ECR 로그인 및 이미지 빌드/푸시 (AWS 콘솔 푸시 명령어 참조)
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin [ACCOUNT_ID].dkr.ecr.ap-northeast-2.amazonaws.com
+docker build -t fraud-detection-consumer ./app/consumer
+docker push [ACCOUNT_ID].dkr.ecr.ap-northeast-2.amazonaws.com/fraud-detection-consumer:latest
+
+# 2. Kubernetes 배포
+kubectl apply -f k8s/deployment.yaml       # Consumer Pod 배포
+kubectl apply -f k8s/keda-scaledobject.yaml # 오토스케일링 설정 적용
+
+### 4.4. Run Data Generator (데이터 전송 시작)
+로컬 환경에서 PaySim 데이터를 생성하여 AWS Kinesis로 전송합니다.
+cd app/generator
+pip install -r requirements.txt
+python generator.py
