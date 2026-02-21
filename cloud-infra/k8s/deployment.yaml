@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-consumer-deployment
+  labels:
+    app: fraud-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-consumer
+  template:
+    metadata:
+      labels:
+        app: fraud-consumer
+    spec:
+      serviceAccountName: fraud-consumer-sa   # ★ 추가
+      containers:
+        - name: fraud-consumer
+          image: 306901005856.dkr.ecr.ap-northeast-2.amazonaws.com/fraud-detection-consumer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: STREAM_NAME
+              value: "paysim-stream"
+            - name: AWS_REGION
+              value: "ap-northeast-2"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

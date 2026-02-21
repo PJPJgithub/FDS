@@ -1,7 +1,8 @@
 # 1. VPC 구성 (EKS를 위해 넉넉하게 잡습니다)
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
-
+  version = "5.0.0"
+  
   name = "fraud-detection-vpc"
   cidr = "10.0.0.0/16"
 
@@ -32,4 +33,15 @@ resource "aws_kinesis_stream" "paysim_stream" {
     "IncomingBytes",
     "OutgoingBytes"
   ]
+}
+
+# 3. EKS 클러스터 생성
+module "eks_cluster" {
+  source = "./modules/eks"
+
+  cluster_name = "fraud-detection-cluster"
+  vpc_id       = module.vpc.vpc_id
+  
+  # EKS 노드는 Private Subnet에 배치하는 것이 보안 원칙입니다!
+  subnet_ids   = module.vpc.private_subnets
 }
