@@ -1,9 +1,11 @@
+from decimal import Decimal
 import time
 import json
 import boto3
 import os
 import signal
 import sys
+import uuid
 
 # --- [설정] ---
 STREAM_NAME = os.environ.get('STREAM_NAME', 'paysim-stream')
@@ -16,27 +18,65 @@ kinesis = boto3.client('kinesis', region_name=REGION_NAME)
 # --- [가짜 모델 로직] (나중에 팀원 코드로 교체) ---
 def dummy_predict(data):
     # 단순 규칙: 5만원 넘으면 사기로 간주
-    amount = float(data.get('amount', 0))
-    if amount > 50000:
+    amount = data.get('amount', Decimal('0'))  # Decimal 처리
+    if amount > Decimal('50000'):
         return True
     return False
 
 def process_record(record):
     try:
-        # 1. 데이터 파싱 (JSON 문자열 -> 딕셔너리)
-        payload = json.loads(record['Data'])
+        # Kinesis record를 안전하게 Decimal로 파싱 (핵심 수정!)
+        payload = json.loads(record['Data'], parse_float=lambda x: Decimal(str(x)))
         
-        # 2. 모델 예측
-        is_fraud = dummy_predict(payload)
+        # 1. 차단 리스트 확인
+        dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-2')
+        block_table = dynamodb.Table('block-list')
         
-        # 3. 결과 로그 출력 (CloudWatch에서 확인 가능)
-        status = "🚨 FRAUD" if is_fraud else "✅ NORMAL"
-        print(f"[{status}] Amount: {payload.get('amount')} | User: {payload.get('nameOrig')}")
-
-        # TODO: Phase 3에서 여기에 DynamoDB 저장 및 SNS 알림 로직 추가 예정
-
+        response = block_table.get_item(Key={'user_id': payload['nameOrig']})
+        if 'Item' in response:
+            print(f"🚫 BLOCKED: {payload['nameOrig']} is in block list")
+            return
+        
+        # 2. 모델 예측 (amount 이미 Decimal)
+        is_fraud = dummy_predict(payload)  # dummy_predict도 수정 필요 (아래)
+        
+        # 3. 거래 로그 저장 (모든 값 Decimal 안전)
+        log_table = dynamodb.Table('transaction-logs')
+        log_table.put_item(Item={
+            'transaction_id': str(uuid.uuid4()),
+            'timestamp': payload.get('step', 0),  # step을 timestamp 대신
+            'amount': payload['amount'],  # 이미 Decimal
+            'oldbalanceOrg': payload.get('oldbalanceOrg', Decimal('0')),
+            'newbalanceOrig': payload.get('newbalanceOrig', Decimal('0')),
+            'user_id': payload['nameOrig'],
+            'is_fraud': is_fraud,
+            'type': payload['type']
+        })
+        
+        # 4. Fraud면 차단 + 알림
+        if is_fraud:
+            print(f"🚨 FRAUD DETECTED: {payload['amount']}")
+            
+            block_table.put_item(Item={
+                'user_id': payload['nameOrig'],
+                'reason': 'fraud_detection',
+                'amount': payload['amount'],
+                'timestamp': int(time.time()),
+                'ttl': int(time.time()) + 86400
+            })
+            
+            sns = boto3.client('sns', region_name='ap-northeast-2')
+            sns.publish(
+                TopicArn='arn:aws:sns:ap-northeast-2:306901005856:fraud-alerts',
+                Message=f"Fraud Alert!\nUser: {payload['nameOrig']}\nAmount: {payload['amount']}\nType: {payload['type']}"
+            )
+        else:
+            print(f"✅ NORMAL: {payload['amount']}")
+            
     except Exception as e:
-        print(f"Error processing record: {e}")
+        print(f"❌ Processing error: {e}")
+        import traceback
+        traceback.print_exc()  # 디버깅 위해 추가
 
 def main():
     print(f"🚀 Starting Consumer for Stream: {STREAM_NAME}")
