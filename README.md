@@ -24,6 +24,18 @@
 
 이에 따라 본 프로젝트에서는 탐색적 데이터 분석(EDA)을 통해
 데이터 특성을 면밀히 검토하고, 특징 공학을 기반으로 실제 환경에 적용 가능한 사기 탐지 모델을 설계한다.
+- `01_data_profiling.ipynb`  
+  데이터 구조, 결측치, 클래스 불균형 검토
+
+- `02_eda_fraud_patterns.ipynb`  
+  사기 거래의 행동적 패턴 분석  
+
+- `03_preprocessing_feature_engineering.ipynb`  
+  Feature Engineering, Scaling, SMOTE 실험
+
+- `04_modeling_xgboost.ipynb`  
+  XGBoost 모델 학습 및 F1-score 평가
+
 
 ### 👥 Team & Role
 *   **자라🐢 (Cloud Engineer):** 인프라 아키텍처 설계, EKS 구축, CI/CD 파이프라인, 모니터링 시스템 구현
