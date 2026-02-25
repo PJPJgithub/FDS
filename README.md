@@ -72,30 +72,72 @@
 
 이 프로젝트를 로컬 및 AWS 환경에서 실행하는 순서입니다.
 
-### 1. Prerequisites (준비물)
-*   AWS CLI (Configure 설정 완료)
-*   Terraform, Docker, Kubectl, Python 3.9+
+### **사전 준비**
+```bash
+# 1. AWS CLI + kubectl + terraform 설치
+aws configure  # Access Key 입력
+```
 
-### 2. Infrastructure Setup (AWS 리소스 생성)
-Terraform을 이용해 VPC, EKS, Kinesis, DynamoDB를 생성합니다.
+### **1. 인프라 구축** (15분)
 ```bash
 cd infra
 terraform init
-terraform apply -auto-approve
+terraform apply -auto-approve  # EKS + Kinesis + DynamoDB + SNS
+aws eks update-kubeconfig --region ap-northeast-2 --name fraud-detection-cluster
+```
 
-### 3. Deploy Application to EKS (앱 배포)
-팀원이 개발한 이상 탐지 모델을 Docker로 빌드하여 EKS에 배포합니다.
-# 1. ECR 로그인 및 이미지 빌드/푸시 (AWS 콘솔 푸시 명령어 참조)
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin [ACCOUNT_ID].dkr.ecr.ap-northeast-2.amazonaws.com
-docker build -t fraud-detection-consumer ./app/consumer
-docker push [ACCOUNT_ID].dkr.ecr.ap-northeast-2.amazonaws.com/fraud-detection-consumer:latest
+### **2. K8s 배포** (2분)
+```bash
+kubectl apply -f k8s/serviceaccount.yaml  # IRSA
+kubectl apply -f k8s/deployment.yaml      # ML Consumer
+kubectl rollout status deployment/fraud-consumer-deployment
+```
 
-# 2. Kubernetes 배포
-kubectl apply -f k8s/deployment.yaml       # Consumer Pod 배포
-kubectl apply -f k8s/keda-scaledobject.yaml # 오토스케일링 설정 적용
-
-### 4.4. Run Data Generator (데이터 전송 시작)
-로컬 환경에서 PaySim 데이터를 생성하여 AWS Kinesis로 전송합니다.
-cd app/generator
-pip install -r requirements.txt
+### **3. 데모 실행** (실시간 테스트)
+```bash
+# 터미널 1: 데이터 생성
+cd ai-model
 python generator.py
+
+# 터미널 2: 실시간 로그 (✅🚨🚫 확인)
+kubectl logs -f deployment/fraud-consumer-deployment
+```
+
+**예상 결과:**
+```
+✅ NORMAL: 5443.26
+🚨 FRAUD DETECTED: 18498.8
+🚫 BLOCKED: C123456789
+```
+
+## 🚀 How to Terminate (종료 가이드)
+
+```bash
+# 1. 데모 중지
+# generator: Ctrl+C
+
+# 2. K8s 리소스 삭제
+kubectl delete deployment fraud-consumer-deployment
+kubectl delete sa fraud-consumer-sa
+
+# 3. 인프라 삭제 (비용 0원)
+cd infra
+terraform destroy -auto-approve
+
+# 4. ECR 정리 (선택)
+aws ecr delete-repository --repository-name fraud-consumer --region ap-northeast-2 --force
+```
+
+## 📊 **예상 비용 (크레딧 사용)**
+```
+EKS Control Plane: 무료 ($0.10/hr)
+EC2 t3.micro x3: $0.05/hr
+Kinesis/DynamoDB: $0.01/시간
+```
+
+## 🔍 **Troubleshooting**
+```
+❌ "deployment not found": terraform apply 재실행
+❌ IRSA AccessDenied: IAM Trust Policy OIDC 확인
+❌ DynamoDB Float 에러: Decimal(str(amount))
+```
