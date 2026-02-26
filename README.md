@@ -39,9 +39,9 @@
 3.  **Action:**
     *   **Fraud:** 즉시 **DynamoDB** BlockList에 등록하고 **AWS SNS**를 통해 관리자에게 경고 발송
     *   **Normal:** 거래 로그 저장
-4.  **Autoscaling:** **KEDA**가 Kinesis의 Lag(지연)를 감지하여 트래픽 증가 시 Pod를 자동으로 확장 (HPA)
++  **Autoscaling:** **KEDA**가 Kinesis의 Lag(지연)를 감지하여 트래픽 증가 시 Pod를 자동으로 확장 (HPA)
 
-*(여기에 아키텍처 다이어그램 이미지를 넣으세요. ex: `![Architecture](./docs/arch.png)`) - draw.io 등으로 그리면 좋습니다.*
+*(아키텍처 다이어그램 이미지*
 
 ---
 
