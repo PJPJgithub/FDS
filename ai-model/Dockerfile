@@ -12,7 +12,7 @@ RUN pip install -r requirements-ml.txt
 #RUN pip install --no-cache-dir -r requirements.txt
 
 # ai-model 폴더 전체 복사
-COPY ai-model/ /app/
+COPY . /app/
 
 # 실행 명령어
 CMD ["python", "-u", "main.py"] 

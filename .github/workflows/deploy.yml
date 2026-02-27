@@ -35,6 +35,7 @@ jobs:
     - name: Build, tag, and push Docker to ECR
       env:
         IMAGE_TAG: ${{ github.sha }}
+        working-directory: ./ai-model
       run: |
         docker build -f ai-model/Dockerfile -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
         docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
