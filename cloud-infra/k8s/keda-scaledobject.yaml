@@ -1,0 +1,21 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fraud-consumer-scaledobject
+spec:
+  scaleTargetRef:
+    name: fraud-consumer-deployment   # deployment 이름
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  cooldownPeriod:  30
+  pollingInterval: 15
+  triggers:
+  - type: aws-kinesis-stream
+    metadata:
+      streamName: paysim-stream
+      awsRegion: ap-northeast-2
+      shardCount: "1"
+      activationLagThreshold: "1"
+      lagThreshold: "2"
+    authenticationRef:
+      name: keda-aws-auth

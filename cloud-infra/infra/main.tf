@@ -81,3 +81,31 @@ resource "aws_dynamodb_table" "block_list" {
     Name = "FraudDetection-BlockList"
   }
 }
+
+# KEDA Kinesis Scaler용 IRSA
+resource "aws_iam_role" "keda_kinesis_role" {
+  name = "keda-kinesis-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = { Federated = "arn:aws:iam::306901005856:oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/71ACEF77A04A438C3C9B567C941E7E2C" }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "oidc.eks.ap-northeast-2.amazonaws.com/id/71ACEF77A04A438C3C9B567C941E7E2C:aud" = "sts.amazonaws.com"
+          "oidc.eks.ap-northeast-2.amazonaws.com/id/71ACEF77A04A438C3C9B567C941E7E2C:sub" = "system:serviceaccount:keda:keda-kinesis-external-scaler"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "keda_kinesis_policy" {
+  name = "KedaKinesisPolicy"
+  role = aws_iam_role.keda_kinesis_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["kinesis:DescribeStream","kinesis:GetShardIterator","kinesis:GetRecords"], Resource = aws_kinesis_stream.paysim_stream.arn }]
+  })
+}
