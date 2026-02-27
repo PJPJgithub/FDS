@@ -11,11 +11,6 @@ RUN pip install -r requirements-ml.txt
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-'''
-# 소스 코드 복사
-COPY main.py .
-COPY model.pkl /model.pkl  # 팀원 모델!
-'''
 # ai-model 폴더 전체 복사
 COPY ai-model/ /app/
 
