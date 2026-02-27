@@ -154,6 +154,7 @@ def main():
                 print(f"Processing {len(records)} records...")
                 for record in records:
                     process_record(record)
+                    time.sleep(5)#keda-autoscaling test용
             
             # 다음 이터레이터 갱신
             shard_iterator = response['NextShardIterator']
