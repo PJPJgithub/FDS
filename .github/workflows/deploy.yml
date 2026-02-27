@@ -45,11 +45,8 @@ jobs:
     - name: Connect to EKS & Deploy
       env:
         CLUSTER_NAME: ${{ env.EKS_CLUSTER_NAME }}
+        AWS_REGION: ${{ env.AWS_REGION }}
       run: |
-        aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ env.AWS_REGION }}
-        aws eks get-token --cluster-name $CLUSTER_NAME --region ${{ env.AWS_REGION }} | kubectl config set-credentials eks-ci
-        kubectl config set-context eks-ci-context --cluster=$CLUSTER_NAME --user=eks-ci
-        kubectl config use-context eks-ci-context
-        
-        kubectl rollout restart deployment/fraud-detection-consumer  # 이미지 자동 pull
+        aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+        kubectl rollout restart deployment/fraud-detection-consumer
         kubectl rollout status deployment/fraud-detection-consumer --timeout=300s
