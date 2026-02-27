@@ -8,8 +8,8 @@ COPY requirements-ml.txt .
 RUN pip install -r requirements-ml.txt
 
 # 의존성 설치 (캐시 활용을 위해 먼저 복사)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+#COPY requirements.txt .
+#RUN pip install --no-cache-dir -r requirements.txt
 
 # ai-model 폴더 전체 복사
 COPY ai-model/ /app/
