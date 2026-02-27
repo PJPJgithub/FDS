@@ -1,35 +1,38 @@
-name: Fraud Detection CI/CD (OIDC)
+name: Fraud Detection CI/CD (OIDC Fixed)
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 permissions:
   contents: read
-  id-token: write  # OIDC 핵심!
+  id-token: write  # OIDC 필수
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY_URI: ${{ secrets.ECR_REPOSITORY_URI }}
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
-  ROLE_ARN: ${{ secrets.ROLE_ARN }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # main만 배포 (PR은 스킵)
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-    - name: Configure AWS OIDC
+    - name: Configure AWS OIDC Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-arn: ${{ secrets.ROLE_ARN }}
-        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ secrets.ROLE_ARN }}  # role-arn → role-to-assume!
+        aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login to ECR
+    - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build & Push Docker
+    - name: Build, tag, and push Docker to ECR
       env:
         IMAGE_TAG: ${{ github.sha }}
       run: |
@@ -38,8 +41,8 @@ jobs:
         docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
         docker push $ECR_REPOSITORY_URI:latest
 
-    - name: Update Kubeconfig & Deploy
+    - name: Connect to EKS & Deploy
       run: |
-        aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
         kubectl set image deployment/fraud-detection-consumer fraud-detection-consumer=$ECR_REPOSITORY_URI:latest
         kubectl rollout status deployment/fraud-detection-consumer --timeout=300s
