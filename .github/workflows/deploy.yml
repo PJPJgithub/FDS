@@ -41,10 +41,15 @@ jobs:
         docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
         docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
         docker push $ECR_REPOSITORY_URI:latest
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: ${{ secrets.ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
 
     - name: Connect to EKS & Deploy
       run: |
         aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-        kubectl get nodes
         kubectl set image deployment/fraud-detection-consumer fraud-detection-consumer=$ECR_REPOSITORY_URI:latest
         kubectl rollout status deployment/fraud-detection-consumer --timeout=300s
