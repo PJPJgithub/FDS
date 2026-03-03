@@ -43,10 +43,7 @@ jobs:
         docker push $ECR_REPOSITORY_URI:latest
 
     - name: Connect to EKS & Deploy
-      env:
-        CLUSTER_NAME: ${{ env.EKS_CLUSTER_NAME }}
-        AWS_REGION: ${{ env.AWS_REGION }}
       run: |
-        aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
         kubectl rollout restart deployment/fraud-detection-consumer
         kubectl rollout status deployment/fraud-detection-consumer --timeout=300s
