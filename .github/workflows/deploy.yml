@@ -45,5 +45,5 @@ jobs:
     - name: Connect to EKS & Deploy
       run: |
         aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
-        kubectl set image deployment/fraud-detection-consumer fraud-detection-consumer=$ECR_REPOSITORY_URI:latest
-        kubectl rollout status deployment/fraud-detection-consumer --timeout=300s
+        kubectl set image deployment/fraud-consumer-deployment fraud-consumer-deployment=$ECR_REPOSITORY_URI:latest
+        kubectl rollout status deployment/fraud-consumer-deployment --timeout=300s
