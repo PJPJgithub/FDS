@@ -43,7 +43,10 @@ jobs:
         docker push $ECR_REPOSITORY_URI:latest
 
     - name: Connect to EKS & Deploy
+      working-directory: ./cloud-infra
       run: |
         aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+        kubectl apply -f k8s/serviceaccount.yaml  # IRSA
+        kubectl apply -f k8s/deployment.yaml      # ML Consumer
         kubectl set image deployment/fraud-consumer-deployment fraud-consumer-deployment=$ECR_REPOSITORY_URI:latest
         kubectl rollout status deployment/fraud-consumer-deployment --timeout=300s
